@@ -9,7 +9,7 @@ class sheet:
     
     def data(self):
         for i in range(len(self.paper)):
-            print("line", i)
+            print("line", i+1)
             self.paper[i].data() 
     
     def play(self):
@@ -26,7 +26,7 @@ class line:
     
     def data(self):
         for k in range(len(self.group)):
-            print("measure", k)
+            print("measure", k+1)
             self.group[k].data()
     
     def play(self):
@@ -47,7 +47,7 @@ class measure:
     def data(self):
         for i in range(self.size):
             print(self.notes[i].name, end=" ")
-            print("note", i)
+            print("note", i+1)
     
     def play(self):
         for i in range(self.size):
@@ -55,9 +55,11 @@ class measure:
             #winsound is w beeping the notes
     
     def shift(self,amount):
-        for i in range(self.size):
-            print(amount, i)
-        
+        for note_index in range(self.size):
+            self.notes[note_index].new_pitch = (self.notes[note_index].general_pitch + amount)
+            self.notes[note_index].update_pitch()
+            
+       
         
 class note:
     base_freq = 440     #440 hz A
@@ -67,11 +69,44 @@ class note:
         self.freq = self.name2freq()
         self.time = time
         self.time_120 = self.time_2_120()
+        self.general_pitch = self.get_general_pitch()
+        self.new_pitch = 0              #will be updated in shift method
+        self.shifted_pitch = self.update_pitch()
         print(self.name, "the freq is", self.freq, "the length is", self.time, "\n")
     
     def gettime(self):
         return self.time
     
+    def get_general_pitch(self):
+        global pitch_up, pitch_down
+        pitch_up = ["C3","C#3","D3","D#3","E3","F3","F#3","G3","G#3","A3","A#3","B3","C4","C#4","D4","D#4","E4","F4","F#4","G4","G#4","A4","A#4","B4","C5","C#5","D5","D#5","E5","F5","F#5","G5","G#5","A5","A#5","B5"]
+        pitch_down = ["C3","Db3","D3","Eb3","E3","F3","Gb3","G3","Ab3","A3","Bb3","B3","C4","Db4","D4","Eb4","E4","F4","Gb4","G4","Ab4","A4","Bb4","B4","C5","Db5","D5","Eb5","E5","F5","Gb5","G5","Ab5","A5","Bb5","B5"]
+        for pitch_val in range(len(pitch_up)):
+            if self.name == pitch_up[pitch_val]:
+                return pitch_val
+        ## if note is not in the pitch it is a flat so
+        for pitch_val in range(len(pitch_down)):
+            if self.name == pitch_down[pitch_val]:
+                return pitch_val
+    
+    def update_pitch(self):
+        invalid_shift = True
+        if self.new_pitch > 0 and self.general_pitch < self.new_pitch and self.new_pitch < len(pitch_up):
+            self.name = pitch_up[self.new_pitch]
+            self.freq = self.name2freq()
+            invalid_shift = False
+            print("the shifted up note is ", pitch_up[self.new_pitch], "shifted by ", self.new_pitch - self.general_pitch, "with a new freq of ", self.freq)
+            
+        
+        if self.new_pitch > 0 and self.general_pitch > self.new_pitch and self.new_pitch < len(pitch_down):
+            self.name = pitch_down[self.new_pitch]
+            self.freq = self.name2freq()
+            invalid_shift = False
+            print("the shifted down note is ", pitch_up[self.new_pitch], "shifted by ", self.new_pitch - self.general_pitch, "with a new freq of ", self.freq)
+        
+        if invalid_shift:
+            print("the note can't be shifted down or up it is out of range of C3-B5")
+        
     def time_2_120(self):    #sets to 120 tempo quarter note
         return (60000/120)*self.time
         # 60000 ms/ 120 bpm * value 1 for quater 2 for half etc
@@ -85,7 +120,7 @@ class note:
         notelist5 = [523.25, 554.37, 587.33, 622.25, 659.26, 698.46, 739.99, 783.99, 830.61, 880.00, 932.33, 987.77]
         match self.name:
             ## ocatve 3
-            case 'C3':
+            case "C3":
                 return notelist3[0]
             case "C#3" | "Db3":
                 return notelist3[1]
@@ -227,8 +262,7 @@ def load(filename):
     
 def main():     
     #print("name that note put Bb for bflat, and A# for a_sharp")
-    print("\nEnter the file name of the sheet:")
-    #load("eight_note_test.txt")
+    print("\nEnter the file name of the sheet to load:")
     load(input())
     print("the whole song is \n")
     S1.data()
@@ -239,7 +273,13 @@ def main():
     elif usr_in == '2': 
         print("exiting")
         w.PlaySound("SystemExit",w.SND_ALIAS)
-    
-    S1.shift(1)
+    print("would you like to shift the song?\n 1 for yes")
+    usr_in = input()
+    if usr_in == '1':
+        print("enter the shift in the number of tones each ocatve has 12 tones use - to shift down and + to shift up")
+        S1.shift(int(input()))
+        print("the shifted song is\n")
+        S1.data()
+        S1.play()
         
 main()
